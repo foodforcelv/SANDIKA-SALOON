@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SANDIKA - නවීන රූපලාවණ්‍ය අත්දැකීම | Modern Beauty Experience</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Noto+Sans+Sinhala:wght@400;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js" integrity="sha512-/5o5d+KDo9j+TaIC9FKrJzFALLu+SNp7SNO4UD5ebnFUDIChlfhPU7O5qG6fmbFvQ+pKqEvjS+j9U9TNSqZJrw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.164.1/three.min.js" integrity="sha512-33Ss5fAvz6JfdJJo7+L13AAbJpkS0C5377ZoFH2nMhmZfF8LDUwpL96dF5GM8U/F8L3VpP8QXQljT8892nLqwg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha512-7eHRwcbYkK4d9g/6tD/mhkf++eoTHwpNM9woBxtPUBWm67zeAfFC+HrdoE2GanKeocly/VxeLvIqwvCdk7qScg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" integrity="sha512-onMTRKJBKz8M1TnqqDuGBlowlH0ohFzMXYRNebz+yOcc5TQr/zAKsthzhuv0hiyUKEiQEQXEynnXCvNTOk50dg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.42/bundled/lenis.min.js"></script>
+
+
+    <style>
+        /* === Base & Tailwind Config === */
+        html {
+            scroll-behavior: smooth; /* Fallback */
+        }
+        body {
+            font-family: 'Poppins', 'Noto Sans Sinhala', sans-serif;
+            background-color: #f8fafc; /* bg-slate-50 */
+            color: #1e293b; /* bg-slate-800 */
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+
+        /* Tailwind Customization (via JS below is better, but can add basics here) */
+        .gradient-text {
+            background: linear-gradient(to right, #8b5cf6, #ec4899); /* violet-500 to pink-500 */
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* === Canvas Styling === */
+        #p5-canvas-container, #three-canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Place behind content */
+            overflow: hidden;
+        }
+        #three-canvas-container {
+             /* Adjust if needed for specific section */
+             z-index: 0; /* May need adjustment based on layout */
+             position: relative; /* Or absolute depending on desired effect */
+             height: 400px; /* Example height */
+        }
+         canvas {
+             display: block; /* Prevent extra space below canvas */
+         }
+
+
+        /* === Section Styling & Page Switching === */
+        .page-section {
+            display: none; /* Hide sections initially */
+            opacity: 0; /* Start hidden for GSAP fade-in */
+            min-height: 80vh; /* Ensure sections have some height */
+            padding-top: 8rem; /* Offset for sticky header */
+             padding-bottom: 4rem;
+        }
+        #hero { /* Show hero section by default */
+            display: block;
+            opacity: 1;
+             padding-top: 0; /* Hero might not need top padding */
+             min-height: 100vh; /* Make hero full height */
+             position: relative; /* Needed for absolute canvas */
+             display: flex;
+             align-items: center;
+             justify-content: center;
+        }
+
+        /* === Header Styling === */
+        header {
+            transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        header.scrolled {
+            background-color: rgba(255, 255, 255, 0.9); /* White with transparency */
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+             border-bottom: 1px solid #e5e7eb; /* gray-200 */
+        }
+         header.scrolled nav a {
+             color: #374151; /* gray-700 */
+         }
+         header.scrolled nav a:hover {
+              color: #8b5cf6; /* violet-500 */
+         }
+         header.scrolled h1 a {
+              color: #1f2937; /* gray-800 */
+         }
+
+
+        /* === Animation Placeholders (GSAP will target these) === */
+        .reveal-up {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        .reveal-fade {
+             opacity: 0;
+        }
+
+        /* === Accordion Styling === */
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out, padding 0.5s ease-out;
+            padding: 0 1.5rem; /* px-6 */
+             border-left: 2px solid transparent;
+        }
+        .accordion-item.active .accordion-content {
+            max-height: 500px; /* Adjust as needed */
+            padding: 1.5rem; /* py-6 px-6 */
+             border-left-color: #8b5cf6; /* violet-500 */
+        }
+        .accordion-item.active .accordion-button svg {
+            transform: rotate(180deg);
+        }
+        .accordion-button svg {
+             transition: transform 0.3s ease-out;
+        }
+
+         /* === Focus Ring Customization === */
+         *:focus-visible {
+             outline: 2px solid #a78bfa; /* violet-400 */
+             outline-offset: 2px;
+             border-radius: 4px;
+         }
+         input:focus-visible, textarea:focus-visible, button:focus-visible {
+              box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.3); /* violet-400 with transparency */
+         }
+
+    </style>
+</head>
+<body class="antialiased">
+
+    <header id="main-header" class="fixed top-0 left-0 w-full z-50 transition-all duration-300 py-4">
+        <div class="container mx-auto px-6 flex justify-between items-center">
+             <h1 class="text-2xl md:text-3xl font-bold tracking-tight transition-colors duration-300">
+                <a href="#hero" data-target="hero" class="nav-link text-slate-800 hover:text-violet-500">SANDIKA</a>
+            </h1>
+            <nav class="space-x-4 md:space-x-6 hidden md:flex">
+                <a href="#hero" data-target="hero" class="nav-link text-slate-700 hover:text-violet-500 transition duration-300 font-medium pb-1 border-b-2 border-transparent hover:border-violet-500">මුල් පිටුව</a>
+                <a href="#about" data-target="about" class="nav-link text-slate-700 hover:text-violet-500 transition duration-300 font-medium pb-1 border-b-2 border-transparent hover:border-violet-500">අප ගැන</a>
+                <a href="#services" data-target="services" class="nav-link text-slate-700 hover:text-violet-500 transition duration-300 font-medium pb-1 border-b-2 border-transparent hover:border-violet-500">සේවාවන්</a>
+                <a href="#philosophy" data-target="philosophy" class="nav-link text-slate-700 hover:text-violet-500 transition duration-300 font-medium pb-1 border-b-2 border-transparent hover:border-violet-500">අපේ දැක්ම</a>
+                <a href="#why-us" data-target="why-us" class="nav-link text-slate-700 hover:text-violet-500 transition duration-300 font-medium pb-1 border-b-2 border-transparent hover:border-violet-500">ඇයි අපි?</a>
+                <a href="#contact" data-target="contact" class="nav-link text-slate-700 hover:text-violet-500 transition duration-300 font-medium pb-1 border-b-2 border-transparent hover:border-violet-500">අමතන්න</a>
+            </nav>
+            <button id="mobile-menu-button" class="md:hidden text-slate-700 text-2xl focus:outline-none z-50">
+                 <i class="fa-solid fa-bars"></i>
+             </button>
+        </div>
+         <div id="mobile-menu" class="absolute top-0 left-0 w-full h-screen bg-white/95 backdrop-blur-md md:hidden flex flex-col items-center justify-center space-y-6 text-xl transition-transform duration-300 ease-in-out transform -translate-x-full">
+            <a href="#hero" data-target="hero" class="mobile-nav-link text-slate-700 hover:text-violet-500">මුල් පිටුව</a>
+            <a href="#about" data-target="about" class="mobile-nav-link text-slate-700 hover:text-violet-500">අප ගැන</a>
+            <a href="#services" data-target="services" class="mobile-nav-link text-slate-700 hover:text-violet-500">සේවාවන්</a>
+            <a href="#philosophy" data-target="philosophy" class="mobile-nav-link text-slate-700 hover:text-violet-500">අපේ දැක්ම</a>
+            <a href="#why-us" data-target="why-us" class="mobile-nav-link text-slate-700 hover:text-violet-500">ඇයි අපි?</a>
+            <a href="#contact" data-target="contact" class="mobile-nav-link text-slate-700 hover:text-violet-500">අමතන්න</a>
+             <button id="close-mobile-menu-button" class="absolute top-6 right-6 text-slate-700 text-3xl">
+                 <i class="fa-solid fa-xmark"></i>
+             </button>
+        </div>
+    </header>
+
+    <main id="main-content">
+
+        <section id="hero" class="page-section">
+            <div id="p5-canvas-container"></div> <div class="container mx-auto px-6 text-center z-10">
+                 <h1 class="text-5xl md:text-7xl font-bold text-slate-900 mb-4 reveal-up">SANDIKA</h1>
+                <p class="text-xl md:text-2xl font-light text-slate-700 mb-8 reveal-up" style="animation-delay: 0.2s;">ඔබේ සුන්දරත්වය, අපේ කැපවීම</p>
+                <div class="reveal-up" style="animation-delay: 0.4s;">
+                  <a href="#services" data-target="services" class="nav-link inline-block bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transform transition duration-300 ease-in-out text-lg">
+                      අපගේ සේවාවන් බලන්න <i class="fa-solid fa-arrow-right ml-2 text-sm"></i>
+                  </a>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="page-section bg-white">
+            <div class="container mx-auto px-6">
+                <h2 class="text-4xl md:text-5xl font-bold text-center text-slate-900 mb-12 reveal-fade">අප ගැන කතාව</h2>
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div class="reveal-up">
+                        <h3 class="text-2xl font-semibold text-violet-600 mb-4">අපගේ ගමන</h3>
+                        <p class="text-slate-700 mb-4 leading-relaxed">
+                            SANDIKA ආරම්භ වූයේ සරල අරමුණක් පෙරදැරිවයි: සෑම කෙනෙකුටම තම හොඳම පෙනුමෙන් සහ හොඳම හැඟීමෙන් සිටීමට උපකාර කිරීම. වසර ගණනාවක අත්දැකීම් සහ රූපලාවණ්‍ය කලාව කෙරෙහි ඇති දැඩි ආශාවෙන් යුතුව, අපි ඔබට අමතක නොවන සේවාවක් ලබා දීමට කැපවී සිටිමු.
+                        </p>
+                        <p class="text-slate-700 leading-relaxed">
+                            අපි විශ්වාස කරන්නේ සැබෑ සුන්දරත්වය පැමිණෙන්නේ ඇතුළතින් බවත්, අපගේ සේවාවන් ඔබේ බාහිර පෙනුම ඔප් නංවනවා සේම ඔබේ ආත්ම විශ්වාසයද ඉහළ නංවනු ඇති බවත්ය.
+                        </p>
+                    </div>
+                    <div class="bg-slate-100 p-8 rounded-lg shadow-md reveal-up" style="animation-delay: 0.2s;">
+                         <h3 class="text-2xl font-semibold text-violet-600 mb-4">අපගේ කණ්ඩායම</h3>
+                         <p class="text-slate-700 mb-4">
+                            අපගේ කණ්ඩායම සමන්විත වන්නේ ක්ෂේත්‍රයේ ප්‍රවීණයන්ගෙන්. ඔවුන් නවතම ප්‍රවණතා, ශිල්පීය ක්‍රම සහ නිෂ්පාදන පිළිබඳව නිරන්තරයෙන් යාවත්කාලීන වෙමින්, ඔබට හැකි හොඳම ප්‍රතිඵල ලබා දීමට උත්සාහ කරයි.
+                         </p>
+                         <ul class="space-y-2 text-slate-600">
+                             <li class="flex items-center"><i class="fa-solid fa-star text-yellow-400 mr-2"></i> පළපුරුදු සහ සුදුසුකම් ලත් ශිල්පීන්</li>
+                             <li class="flex items-center"><i class="fa-solid fa-heart text-pink-500 mr-2"></i> සුහදශීලී සහ පාරිභෝගික-හිතකාමී සේවය</li>
+                             <li class="flex items-center"><i class="fa-solid fa-hand-sparkles text-violet-500 mr-2"></i> සනීපාරක්ෂාව පිළිබඳ ඉහළම ප්‍රමිතීන්</li>
+                         </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="services" class="page-section bg-slate-50">
+            <div class="container mx-auto px-6">
+                <h2 class="text-4xl md:text-5xl font-bold text-center text-slate-900 mb-12 reveal-fade">අපගේ විවිධ සේවාවන්</h2>
+                <div class="max-w-4xl mx-auto">
+                    <div class="space-y-4 accordion-container">
+                        <div class="accordion-item bg-white rounded-lg shadow-sm border border-slate-200 reveal-up">
+                            <button class="accordion-button w-full flex justify-between items-center p-6 text-left text-xl font-semibold text-slate-800 hover:bg-slate-50 transition rounded-t-lg">
+                                <span><i class="fa-solid fa-scissors text-violet-500 mr-3"></i> කේශාලංකරණය</span>
+                                <svg class="w-5 h-5 text-slate-500 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div class="accordion-content text-slate-600 leading-relaxed">
+                                නවීන කොණ්ඩා කැපීමේ සිට සංකීර්ණ වර්ණ ගැන්වීම් සහ ප්‍රතිකාර දක්වා පුළුල් පරාසයක සේවාවන්.
+                                <ul class="list-disc list-inside mt-4 space-y-1">
+                                    <li>කොණ්ඩය කැපීම සහ හැඩගැන්වීම</li>
+                                    <li>වර්ණ ගැන්වීම් (Global, Highlights, Balayage)</li>
+                                    <li>කෙරටින්, ස්ට්‍රේටනින්, රිබොන්ඩින්</li>
+                                    <li>හිසකෙස් සත්කාර (Hair Spa, Treatments)</li>
+                                    <li>විශේෂ අවස්ථා සඳහා සැකසීම්</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="accordion-item bg-white rounded-lg shadow-sm border border-slate-200 reveal-up">
+                            <button class="accordion-button w-full flex justify-between items-center p-6 text-left text-xl font-semibold text-slate-800 hover:bg-slate-50 transition rounded-t-lg">
+                                <span><i class="fa-solid fa-spa text-pink-500 mr-3"></i> චර්ම සහ රූපලාවණ්‍ය</span>
+                                <svg class="w-5 h-5 text-slate-500 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div class="accordion-content text-slate-600 leading-relaxed">
+                                ඔබේ සම පැහැපත් කර, නිරෝගී දිදුලන පෙනුමක් ලබා දෙන විවිධ ෆේෂල් සහ රූපලාවණ්‍ය සත්කාර.
+                                 <ul class="list-disc list-inside mt-4 space-y-1">
+                                    <li>විවිධ ෆේෂල් වර්ග (සමට ගැළපෙන)</li>
+                                    <li>ක්ලීන්-අප් සහ බ්ලීචින්</li>
+                                    <li>වක්සින් සහ ත්‍රෙඩින්</li>
+                                    <li>මනකුර සහ පේඩිකර (Manicure & Pedicure)</li>
+                                     <li>ඇහි බැම සහ ඇස් පිහාටු සත්කාර</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="accordion-item bg-white rounded-lg shadow-sm border border-slate-200 reveal-up">
+                            <button class="accordion-button w-full flex justify-between items-center p-6 text-left text-xl font-semibold text-slate-800 hover:bg-slate-50 transition rounded-t-lg">
+                               <span><i class="fa-solid fa-ring text-yellow-500 mr-3"></i> මනාලියන් හැඩගැන්වීම</span>
+                                <svg class="w-5 h-5 text-slate-500 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div class="accordion-content text-slate-600 leading-relaxed">
+                                ඔබේ ජීවිතයේ සුවිශේෂී දිනයට සිහිනයක් සැබෑ කරවන මනාලියන් හැඩගැන්වීමේ සම්පූර්ණ සේවාව.
+                                 <ul class="list-disc list-inside mt-4 space-y-1">
+                                    <li>සම්පූර්ණ මනාලියන් පැකේජ</li>
+                                    <li>දෙවෙනි මනාලියන් සහ මල් කුමරියන්</li>
+                                    <li>නෑදෑයින් සැරසීම (Homecoming)</li>
+                                    <li>උත්සව අවස්ථා සඳහා සැකසීම්</li>
+                                    <li>Pre-Bridal සත්කාර</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-center mt-10 text-slate-600 reveal-fade">
+                        මිල ගණන් සහ ඔබට ගැළපෙන සේවාව පිළිබඳ වැඩි විස්තර සඳහා <a href="#contact" data-target="contact" class="nav-link text-violet-600 hover:underline font-semibold">අපව අමතන්න</a>.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+         <section id="philosophy" class="page-section bg-gradient-to-br from-violet-100 via-white to-pink-100 relative overflow-hidden">
+            <div id="three-canvas-container" class="absolute inset-0 z-0 opacity-50 md:opacity-100"></div>
+
+            <div class="container mx-auto px-6 text-center relative z-10">
+                <h2 class="text-4xl md:text-5xl font-bold text-slate-900 mb-6 reveal-fade">අපේ දැක්ම: සැබෑ සුන්දරත්වය</h2>
+                 <p class="text-lg md:text-xl text-slate-700 mb-10 max-w-3xl mx-auto reveal-up">
+                    අපි විශ්වාස කරන්නේ රූපලාවණ්‍ය යනු හුදෙක් බාහිර පෙනුම වෙනස් කිරීමක් පමණක් නොවන බවයි. එය ඔබ තුළ ඇති විශ්වාසය, සතුට සහ අභ්‍යන්තර ශක්තිය මතු කර ගැනීමේ කලාවක්.
+                </p>
+                <div class="grid md:grid-cols-3 gap-8 text-left">
+                     <div class="bg-white/70 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-white/50 reveal-up" style="animation-delay: 0.1s;">
+                         <h4 class="text-xl font-semibold text-violet-700 mb-2 flex items-center"><i class="fa-solid fa-seedling mr-2"></i> පුද්ගලික අවධානය</h4>
+                         <p class="text-slate-600 text-sm">සෑම කෙනෙක්ම අද්විතීයයි. අපි ඔබේ අවශ්‍යතා, සමේ සහ හිසකෙස් වල ස්වභාවය හඳුනාගෙන ඔබටම විශේෂිත වූ සේවාවක් ලබා දෙන්නෙමු.</p>
+                     </div>
+                     <div class="bg-white/70 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-white/50 reveal-up" style="animation-delay: 0.2s;">
+                          <h4 class="text-xl font-semibold text-pink-600 mb-2 flex items-center"><i class="fa-solid fa-feather-alt mr-2"></i> සුවපහසු අත්දැකීමක්</h4>
+                         <p class="text-slate-600 text-sm">කාර්‍යබහුල ජීවිතයෙන් මිදී, විවේකීව, සුහදශීලී පරිසරයක ඔබේ රූපලාවණ්‍ය සත්කාර ලබා ගැනීමට අප වෙත පැමිණෙන්න.</p>
+                     </div>
+                      <div class="bg-white/70 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-white/50 reveal-up" style="animation-delay: 0.3s;">
+                           <h4 class="text-xl font-semibold text-teal-600 mb-2 flex items-center"><i class="fa-solid fa-shield-alt mr-2"></i> ගුණාත්මකභාවය සහ ආරක්ෂාව</h4>
+                         <p class="text-slate-600 text-sm">අපි භාවිත කරන්නේ උසස්ම තත්වයේ, විශ්වාසනීය නිෂ්පාදන පමණි. ඔබේ ආරක්ෂාව සහ සනීපාරක්ෂාව අපගේ ප්‍රමුඛතාවයයි.</p>
+                     </div>
+                </div>
+            </div>
+        </section>
+
+         <section id="why-us" class="page-section bg-white">
+            <div class="container mx-auto px-6">
+                 <h2 class="text-4xl md:text-5xl font-bold text-center text-slate-900 mb-12 reveal-fade">ඇයි <span class="gradient-text">SANDIKA</span> ?</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="text-center p-6 bg-slate-50 rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 reveal-up">
+                        <div class="text-5xl text-violet-500 mb-4"><i class="fa-solid fa-award"></i></div>
+                        <h4 class="text-xl font-semibold text-slate-800 mb-2">පළපුරුදු වෘත්තිකයන්</h4>
+                        <p class="text-slate-600 text-sm">වසර ගණනාවක අත්දැකීම් සහිත දක්ෂ කණ්ඩායමක්.</p>
+                    </div>
+                    <div class="text-center p-6 bg-slate-50 rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 reveal-up" style="animation-delay: 0.1s;">
+                        <div class="text-5xl text-pink-500 mb-4"><i class="fa-solid fa-gem"></i></div>
+                        <h4 class="text-xl font-semibold text-slate-800 mb-2">උසස් තත්වයේ නිෂ්පාදන</h4>
+                        <p class="text-slate-600 text-sm">හොඳම ප්‍රතිඵල සඳහා ජාත්‍යන්තර සන්නාම.</p>
+                    </div>
+                    <div class="text-center p-6 bg-slate-50 rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 reveal-up" style="animation-delay: 0.2s;">
+                        <div class="text-5xl text-teal-500 mb-4"><i class="fa-solid fa-hand-holding-heart"></i></div>
+                        <h4 class="text-xl font-semibold text-slate-800 mb-2">පුද්ගලික සත්කාර</h4>
+                        <p class="text-slate-600 text-sm">ඔබේ අවශ්‍යතාවයටම ගැළපෙන සේවාවක්.</p>
+                    </div>
+                     <div class="text-center p-6 bg-slate-50 rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 reveal-up" style="animation-delay: 0.3s;">
+                        <div class="text-5xl text-yellow-500 mb-4"><i class="fa-solid fa-star"></i></div>
+                        <h4 class="text-xl font-semibold text-slate-800 mb-2">සුවපහසු පරිසරය</h4>
+                        <p class="text-slate-600 text-sm">විවේකීව සේවාව ලබාගත හැකි සුහදශීලී තැනක්.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="page-section bg-gradient-to-br from-slate-800 to-slate-900 text-slate-200">
+            <div class="container mx-auto px-6">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-12 reveal-fade">අප හා සම්බන්ධ වන්න</h2>
+                <div class="grid md:grid-cols-2 gap-12 items-start">
+                    <div class="reveal-up">
+                        <h3 class="text-2xl font-semibold text-violet-400 mb-6">වේලාවක් වෙන් කරගන්න</h3>
+                        <p class="text-slate-300 mb-6 leading-relaxed">
+                            ඔබට අවශ්‍ය සේවාව සඳහා වේලාවක් වෙන් කර ගැනීමට හෝ වැඩි විස්තර දැන ගැනීමට පහත ක්‍රම ඔස්සේ අපව අමතන්න. ඔබට හැකි ඉක්මනින් ප්‍රතිචාර දැක්වීමට අපි බලාපොරොත්තු වෙමු.
+                        </p>
+                         <div class="space-y-4 text-lg">
+                             <p><i class="fa-solid fa-location-dot text-violet-400 w-6 mr-2"></i><span class="text-slate-300">නො. 123, ප්‍රධාන පාර, [නගරය], ශ්‍රී ලංකාව</span></p> <p><i class="fa-solid fa-phone text-violet-400 w-6 mr-2"></i><a href="tel:+94XXXXXXXXX" class="hover:text-violet-300 transition">+94 XX XXX XXXX</a></p> <p><i class="fa-solid fa-envelope text-violet-400 w-6 mr-2"></i><a href="mailto:sandika.salon@example.com" class="hover:text-violet-300 transition">sandika.salon@example.com</a></p> <p><i class="fa-brands fa-whatsapp text-violet-400 w-6 mr-2"></i><a href="https://wa.me/94XXXXXXXXX" target="_blank" class="hover:text-violet-300 transition">+94 XX XXX XXXX</a> (WhatsApp)</p> <p><i class="fa-solid fa-clock text-violet-400 w-6 mr-2"></i><span class="text-slate-300">සඳුදා - සෙනසුරාදා: 9:00 AM - 7:00 PM</span></p> </div>
+                         <div class="mt-8 space-x-4">
+                            <a href="#" class="text-slate-400 hover:text-violet-400 text-2xl transition"><i class="fa-brands fa-facebook"></i></a> <a href="#" class="text-slate-400 hover:text-violet-400 text-2xl transition"><i class="fa-brands fa-instagram"></i></a> </div>
+                    </div>
+                    <div class="bg-slate-800 p-8 rounded-lg shadow-lg reveal-up" style="animation-delay: 0.2s;">
+                         <h3 class="text-2xl font-semibold text-violet-400 mb-6">ඉක්මන් විමසීමක්</h3>
+                         <form action="#" method="POST" class="space-y-5"> <div>
+                                 <label for="name" class="block text-sm font-medium text-slate-300 mb-1">නම</label>
+                                 <input type="text" id="name" name="name" required
+                                        class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-200 placeholder-slate-400 focus:ring-violet-500 focus:border-violet-500 focus:bg-slate-600 transition">
+                             </div>
+                             <div>
+                                 <label for="email" class="block text-sm font-medium text-slate-300 mb-1">ඊමේල් ලිපිනය</label>
+                                 <input type="email" id="email" name="email" required
+                                        class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-200 placeholder-slate-400 focus:ring-violet-500 focus:border-violet-500 focus:bg-slate-600 transition">
+                             </div>
+                              <div>
+                                 <label for="phone" class="block text-sm font-medium text-slate-300 mb-1">දුරකථන අංකය</label>
+                                 <input type="tel" id="phone" name="phone"
+                                        class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-200 placeholder-slate-400 focus:ring-violet-500 focus:border-violet-500 focus:bg-slate-600 transition">
+                             </div>
+                             <div>
+                                 <label for="message" class="block text-sm font-medium text-slate-300 mb-1">ඔබේ පණිවිඩය</label>
+                                 <textarea id="message" name="message" rows="4" required
+                                           class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-200 placeholder-slate-400 focus:ring-violet-500 focus:border-violet-500 focus:bg-slate-600 transition"></textarea>
+                             </div>
+                             <div>
+                                 <button type="submit"
+                                         class="w-full bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-semibold px-6 py-3 rounded-md shadow-lg hover:shadow-xl hover:scale-105 transform transition duration-300 ease-in-out">
+                                     පණිවිඩය යවන්න <i class="fa-solid fa-paper-plane ml-2"></i>
+                                 </button>
+                             </div>
+                             <p class="text-xs text-slate-400 text-center mt-2">*මෙය විමසීමක් පමණි. වේලාවක් වෙන්කර ගැනීමට කරුණාකර දුරකථනයෙන් අමතන්න.</p>
+                         </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-8 px-6 mt-0">
+        <div class="container mx-auto text-center text-sm">
+             <p class="mb-2">&copy; <span id="currentYear"></span> SANDIKA. සියලුම හිමිකම් ඇවිරිණි.</p>
+            <p>නවීන තාක්ෂණයෙන් බලගැන්වූ වෙබ් අත්දැකීමක්.</p>
+            <div class="mt-4">
+                <a href="#hero" data-target="hero" class="nav-link hover:text-violet-400 transition">මුල් පිටුව</a> |
+                <a href="#" class="hover:text-violet-400 transition">Privacy Policy</a> | <a href="#" class="hover:text-violet-400 transition">Terms of Service</a> </div>
+        </div>
+    </footer>
+
+    <script>
+        // Make GSAP available globally
+        gsap.registerPlugin(ScrollTrigger);
+
+        // --- Lenis Smooth Scroll ---
+        const lenis = new Lenis();
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        // Integrate Lenis with GSAP ScrollTrigger
+        lenis.on('scroll', ScrollTrigger.update);
+        gsap.ticker.add((time) => {
+            lenis.raf(time * 1000);
+        });
+        gsap.ticker.lagSmoothing(0);
+
+
+        // Wait for the DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Tailwind Configuration (Optional - Can be added here if needed) ---
+            // tailwind.config = { ... };
+
+            // --- Mobile Menu ---
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const closeMobileMenuButton = document.getElementById('close-mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.remove('-translate-x-full');
+            });
+
+            closeMobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.add('-translate-x-full');
+            });
+
+             mobileNavLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('-translate-x-full');
+                    // Smooth scroll handled by main navigation logic via data-target
+                });
+            });
+
+
+            // --- Header Scroll Effect ---
+            const header = document.getElementById('main-header');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            });
+
+            // --- Page Navigation & Display ---
+            const navLinks = document.querySelectorAll('.nav-link'); // Includes header, footer, and body links with data-target
+            const sections = document.querySelectorAll('.page-section');
+
+            function showPage(targetId, instantly = false) {
+                let targetFound = false;
+                sections.forEach(section => {
+                    if (section.id === targetId) {
+                        targetFound = true;
+                        // Use GSAP for fade-in animation
+                         gsap.to(section, {
+                             duration: instantly ? 0 : 0.8,
+                             opacity: 1,
+                             onStart: () => section.style.display = 'block', // Ensure it's block before animating
+                             ease: "power2.inOut"
+                         });
+                    } else {
+                         // Instantly hide or fade out other sections
+                         gsap.to(section, {
+                             duration: instantly ? 0 : 0.4,
+                             opacity: 0,
+                             onComplete: () => section.style.display = 'none', // Hide after fade out
+                             ease: "power1.inOut"
+                         });
+                    }
+                });
+                 if (!targetFound) console.warn(`Section with ID "${targetId}" not found for display.`);
+
+
+                // Update active link state (basic example - checks data-target)
+                 navLinks.forEach(link => {
+                     if (link.dataset.target === targetId) {
+                         // Add a visual style for active link if desired
+                         // link.classList.add('active-link-style');
+                     } else {
+                         // link.classList.remove('active-link-style');
+                     }
+                 });
+            }
+
+            navLinks.forEach(link => {
+                 // Ensure the link has a data-target attribute for SPA navigation
+                 if (link.dataset.target) {
+                     link.addEventListener('click', (e) => {
+                        e.preventDefault(); // Prevent default anchor jump
+                        const targetId = link.dataset.target;
+                        const targetElement = document.getElementById(targetId);
+
+                        if (targetElement) {
+                            // Use Lenis to scroll smoothly
+                            lenis.scrollTo(targetElement, {
+                                offset: -80, // Adjust based on sticky header height
+                                duration: 1.5,
+                                easing: (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2, // easeInOutCubic
+                            });
+
+                            // Show the target page section after scroll starts
+                            sections.forEach(s => {
+                                if (s.id !== targetId) {
+                                     s.style.display = 'none'; // Hide others immediately
+                                     s.style.opacity = 0;
+                                }
+                             });
+                             // Delay showing the target section slightly for better visual flow during scroll
+                             setTimeout(() => {
+                                 showPage(targetId, false); // Animate the display
+                             }, 150);
+
+                        } else {
+                             console.warn(`Target section #${targetId} not found.`);
+                        }
+                     });
+                 }
+            });
+
+            // Show initial page (Hero) on load
+            showPage('hero', true); // Show instantly
+
+            // --- GSAP Animations ---
+            // Hero text animation on load
+            gsap.fromTo(".reveal-up",
+                { opacity: 0, y: 50 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 1,
+                    stagger: 0.2,
+                    ease: "power3.out",
+                    delay: 0.5 // Delay after page load
+                }
+            );
+
+            // Scroll-triggered animations for elements within sections
+             sections.forEach((section) => {
+                 if (section.id === 'hero') return; // Skip hero initial animation
+
+                 const reveals = section.querySelectorAll('.reveal-up, .reveal-fade');
+                 if (reveals.length > 0) {
+                     gsap.from(reveals, {
+                         scrollTrigger: {
+                             trigger: section,
+                             start: "top 85%", // Trigger slightly later
+                             end: "bottom 20%",
+                             // markers: true, // Uncomment for debugging scroll trigger points
+                             toggleActions: "play none none none", // Play animation once when entering viewport
+                         },
+                         opacity: 0,
+                         y: (el) => el.classList.contains('reveal-up') ? 30 : 0,
+                         duration: 1,
+                         stagger: 0.15,
+                         ease: "power3.out"
+                     });
+                 }
+             });
+
+             // Animate Why Us icons on hover
+             const whyUsItems = document.querySelectorAll('#why-us .reveal-up'); // Target the container div
+              if (whyUsItems.length > 0) {
+                  whyUsItems.forEach(item => {
+                      const icon = item.querySelector('i');
+                      if (icon) {
+                           // Create a GSAP animation attached to the icon element itself
+                            icon._gsapAnimation = gsap.fromTo(icon,
+                                { scale: 1 },
+                                {
+                                    scale: 1.15, // Slightly bigger pop
+                                    duration: 0.3,
+                                    ease: 'back.out(1.7)',
+                                    paused: true,
+                                    overwrite: 'auto'
+                                }
+                            );
+                           // Use the container for hover events
+                            item.addEventListener('mouseenter', () => icon._gsapAnimation.play());
+                            item.addEventListener('mouseleave', () => icon._gsapAnimation.reverse());
+                      }
+                  });
+              }
+
+
+            // --- Accordion Functionality ---
+            const accordionContainer = document.querySelector('.accordion-container');
+            if (accordionContainer) {
+                 accordionContainer.addEventListener('click', (e) => {
+                    const button = e.target.closest('.accordion-button');
+                    if (!button) return;
+
+                    const item = button.closest('.accordion-item');
+                    if (!item) return;
+
+                    const content = item.querySelector('.accordion-content');
+                    const isActive = item.classList.contains('active');
+
+                    // --- Simple Toggle Logic (One item open at a time) ---
+                     // Close all items first
+                    item.parentElement.querySelectorAll('.accordion-item').forEach(otherItem => {
+                         if (otherItem !== item && otherItem.classList.contains('active')) {
+                             otherItem.classList.remove('active');
+                             otherItem.querySelector('.accordion-content').style.maxHeight = null;
+                             // otherItem.querySelector('.accordion-content').style.padding = '0 1.5rem'; // Optional padding animation
+                         }
+                    });
+
+                    // Toggle the clicked item
+                    if (!isActive) {
+                         item.classList.add('active');
+                         content.style.maxHeight = content.scrollHeight + "px"; // Set max-height for opening animation
+                        // content.style.padding = '1.5rem'; // Optional padding animation
+                    } else {
+                         item.classList.remove('active');
+                         content.style.maxHeight = null; // Collapse
+                        // content.style.padding = '0 1.5rem'; // Optional padding animation
+                    }
+                    // --- End Simple Toggle Logic ---
+
+                 });
+            }
+
+
+            // --- Footer Year ---
+            const currentYearSpan = document.getElementById('currentYear');
+             if (currentYearSpan) {
+                 currentYearSpan.textContent = new Date().getFullYear();
+             }
+
+
+            console.log("SANDIKA Modern UI Initialized.");
+        }); // End DOMContentLoaded
+
+
+        // =========================================
+        //             P5.js SKETCH
+        // =========================================
+        let particles = [];
+        const p5Sketch = (p) => {
+            let canvasContainer; // Define globally within sketch scope
+
+            p.setup = () => {
+                canvasContainer = document.getElementById('p5-canvas-container');
+                 if (!canvasContainer) {
+                     console.error("p5 canvas container not found!");
+                     return;
+                 }
+                 let canvas = p.createCanvas(canvasContainer.offsetWidth, canvasContainer.offsetHeight);
+                 canvas.parent('p5-canvas-container');
+                 canvas.style('display', 'block');
+                 particles = []; // Reset particles on setup/resize
+                for (let i = 0; i < 50; i++) { // Particle count
+                    particles.push(new Particle(p));
+                }
+                p.stroke(200, 180, 255, 50); // Soft violet stroke with alpha
+            };
+
+            p.draw = () => {
+                 if (!canvasContainer) return; // Exit if container doesn't exist
+                p.clear(); // Use clear for transparent background
+
+                let mouseInfluence = p.createVector(p.mouseX, p.mouseY);
+
+                particles.forEach((particle, index) => {
+                    particle.update(mouseInfluence);
+                    particle.display();
+                    // Connect nearby particles
+                     for (let j = index + 1; j < particles.length; j++) {
+                         let other = particles[j];
+                         let distance = p.dist(particle.pos.x, particle.pos.y, other.pos.x, other.pos.y);
+                         if (distance < 100) { // Connect if close enough
+                             let alpha = p.map(distance, 0, 100, 100, 0); // Fade line with distance
+                             p.stroke(200, 180, 255, alpha * 0.5); // Apply alpha fade
+                             p.line(particle.pos.x, particle.pos.y, other.pos.x, other.pos.y);
+                         }
+                     }
+                });
+            };
+
+             p.windowResized = () => {
+                  if (!canvasContainer) return;
+                 // Check if container size actually changed to avoid unnecessary redraws/resets
+                 let newWidth = canvasContainer.offsetWidth;
+                 let newHeight = canvasContainer.offsetHeight;
+                 if (p.width !== newWidth || p.height !== newHeight) {
+                     p.resizeCanvas(newWidth, newHeight);
+                     // Optional: Reinitialize particles based on new size if needed
+                     // p.setup(); // This would reset everything, might be too much
+                 }
+            };
+
+            class Particle {
+                constructor(p_instance) {
+                    this.p = p_instance;
+                    this.pos = this.p.createVector(this.p.random(this.p.width), this.p.random(this.p.height));
+                    this.vel = p5.Vector.random2D().mult(this.p.random(0.5, 1.5)); // Slower velocity
+                    this.acc = this.p.createVector(0, 0);
+                    this.maxSpeed = 1.5; // Limit speed
+                     this.baseColor = this.p.color(this.p.random(200, 230), this.p.random(180, 210), 255, 150); // Shades of soft violet/blue
+                     this.size = this.p.random(2, 4);
+                }
+
+                update(mouseVec) {
+                    // Move away from mouse slightly
+                    let steer = p5.Vector.sub(this.pos, mouseVec);
+                    let d = steer.mag();
+                    if (d > 0 && d < 150) { // Avoid division by zero and check range
+                         let desired = steer.setMag(this.maxSpeed);
+                         let force = p5.Vector.sub(desired, this.vel);
+                         force.limit(0.05); // Gentle repulsion
+                         this.acc.add(force);
+                    }
+
+                     // Add a little random wander
+                     this.acc.add(p5.Vector.random2D().mult(0.02));
+
+                    this.vel.add(this.acc);
+                    this.vel.limit(this.maxSpeed);
+                    this.pos.add(this.vel);
+                    this.acc.mult(0); // Reset acceleration
+
+                    // Edges - wrap around smoothly
+                    if (this.pos.x < -this.size) this.pos.x = this.p.width + this.size;
+                    if (this.pos.y < -this.size) this.pos.y = this.p.height + this.size;
+                    if (this.pos.x > this.p.width + this.size) this.pos.x = -this.size;
+                    if (this.pos.y > this.p.height + this.size) this.pos.y = -this.size;
+                }
+
+                display() {
+                    this.p.noStroke();
+                    this.p.fill(this.baseColor);
+                    this.p.ellipse(this.pos.x, this.pos.y, this.size * 2);
+                }
+            }
+        };
+        // Initialize p5 sketch only if the container exists after DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+             if (document.getElementById('p5-canvas-container')) {
+                 new p5(p5Sketch);
+             }
+        });
+
+
+        // =========================================
+        //            THREE.js SCENE
+        // =========================================
+        let scene, camera, renderer, ambientLight, pointLight, rotatingObject;
+        let threeContainer; // Define globally within Three.js scope
+
+        function initThree() {
+            threeContainer = document.getElementById('three-canvas-container');
+            if (!threeContainer) {
+                 console.warn("Three.js container not found. Skipping initialization.");
+                 return; // Don't initialize if container not found
+             }
+
+            // Scene
+            scene = new THREE.Scene();
+
+            // Camera
+            const aspectRatio = threeContainer.offsetWidth / threeContainer.offsetHeight;
+            camera = new THREE.PerspectiveCamera(50, aspectRatio, 0.1, 100);
+            camera.position.z = 5;
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); // Alpha for transparent background
+            renderer.setSize(threeContainer.offsetWidth, threeContainer.offsetHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimize for high DPI screens
+            threeContainer.appendChild(renderer.domElement);
+
+            // Lights
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.7); // Slightly brighter ambient
+            scene.add(ambientLight);
+            pointLight = new THREE.PointLight(0xa78bfa, 1.5, 15); // Slightly brighter violet light
+             pointLight.position.set(2, 3, 4);
+             scene.add(pointLight);
+
+            // Object
+             const geometry = new THREE.TorusKnotGeometry( 0.8, 0.25, 120, 18 ); // Slightly more detail
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xe9d5ff, // Light violet (violet-200)
+                metalness: 0.3,
+                roughness: 0.6,
+                flatShading: false
+            });
+            rotatingObject = new THREE.Mesh(geometry, material);
+             rotatingObject.position.y = 0; // Center object vertically slightly
+            scene.add(rotatingObject);
+
+             // Handle Resize
+            window.addEventListener('resize', onWindowResize, false);
+
+            // Start Animation Loop
+            animateThree();
+             console.log("Three.js Initialized.");
+        }
+
+        function animateThree() {
+            if (!renderer || !scene || !camera || !rotatingObject) return; // Ensure all are initialized
+            requestAnimationFrame(animateThree);
+
+            // Animation
+            rotatingObject.rotation.x += 0.002; // Slower rotation
+            rotatingObject.rotation.y += 0.003;
+             pointLight.position.x = Math.sin(Date.now() * 0.0004) * 3;
+             pointLight.position.y = Math.cos(Date.now() * 0.0003) * 2 + 2.5; // Adjust light movement
+
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+             if (!threeContainer || !renderer || !camera) return;
+
+             // Check if container dimensions are valid
+              const width = threeContainer.offsetWidth;
+              const height = threeContainer.offsetHeight;
+               if (width === 0 || height === 0) return; // Avoid errors if container is hidden or has no size
+
+             camera.aspect = width / height;
+             camera.updateProjectionMatrix();
+             renderer.setSize(width, height);
+             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        }
+
+        // Initialize Three.js after DOM is ready
+        document.addEventListener('DOMContentLoaded', initThree);
+
+    </script>
+
+</body>
+</html>
